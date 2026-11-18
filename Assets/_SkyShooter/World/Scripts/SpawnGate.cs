@@ -2,13 +2,56 @@ using UnityEngine;
 
 namespace SkyShooter.World
 {
-    /// <summary>
-    /// 敵の出現位置と進入先を表す。 | 적 출현 위치와 진입 목적지를 나타낸다.
-    /// 構成段階：動作は未実装。 | 구성 단계: 동작은 아직 구현하지 않음.
-    /// </summary>
+    [DisallowMultipleComponent]
     public sealed class SpawnGate : MonoBehaviour
     {
-        // TODO: 上・下・左・右の区分、外側の出現点、内側の進入点を設定する。 | 상·하·좌·우 구분과 바깥 생성 지점·안쪽 진입 지점을 설정한다.
-        // TODO: プレイヤーが場外へ出ないための境界も別途配置する。 | 플레이어 이탈 방지 경계도 별도로 배치한다.
+        [SerializeField]
+        private Transform spawnPoint;
+
+        [SerializeField]
+        private Transform entryPoint;
+
+        [SerializeField, Min(0.1f)]
+        private float spawnClearanceRadius = 0.7f;
+
+        public bool IsConfigured =>
+            spawnPoint != null && entryPoint != null;
+
+        public Vector3 SpawnPosition => spawnPoint.position;
+        public Vector3 EntryPosition => entryPoint.position;
+
+        public bool IsSpawnClear()
+        {
+            if (!IsConfigured)
+            {
+                return false;
+            }
+
+            // 出現位置が空いているか確認する。 | 생성 위치가 비어 있는지 확인한다.
+            return !Physics.CheckSphere(
+                spawnPoint.position,
+                spawnClearanceRadius,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (!IsConfigured)
+            {
+                return;
+            }
+
+            // 黄色は出現位置、緑色は進入先。 | 노란색은 생성 위치, 초록색은 진입 목적지.
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(
+                spawnPoint.position, spawnClearanceRadius);
+
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(entryPoint.position, 0.25f);
+
+            Gizmos.DrawLine(
+                spawnPoint.position, entryPoint.position);
+        }
     }
 }
