@@ -1,0 +1,25 @@
+
+# Unity 자동 생성 폴더
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+/.vs/
+
+# 자동 생성 프로젝트 파일
+*.csproj
+*.sln
+*.slnx
+*.user
+*.pidb
+*.pdb
+
+# macOS
+.DS_Store
+
+# VS Code 확장 추천만 공유
+/.vscode/*
+!/.vscode/extensions.json
