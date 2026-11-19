@@ -2,13 +2,69 @@ using UnityEngine;
 
 namespace SkyShooter.Player
 {
-    /// <summary>
-    /// プレイヤーのHP・攻撃力・無敵時間を担当する。 | 플레이어 HP·공격력·무적 시간을 담당한다.
-    /// 構成段階：動作は未実装。 | 구성 단계: 동작은 아직 구현하지 않음.
-    /// </summary>
+    [DisallowMultipleComponent]
     public sealed class PlayerStats : MonoBehaviour
     {
-        // TODO: GameSettingsから初期値を取得する。 | GameSettings에서 초기값을 가져온다.
-        // TODO: 被弾、回復、攻撃力上昇、死亡通知を実装する。 | 피격·회복·공격력 증가·사망 알림을 구현한다.
+        // 最大HP | 최대 HP
+        [SerializeField, Min(1)]
+        private int maxHp = 100;
+
+        // 現在のHP | 현재 HP
+        [SerializeField]
+        private int currentHp;
+
+        // 無敵時間 | 무적 시간
+        [SerializeField, Min(0f)]
+        private float invincibleTime = 1f;
+
+        private float nextDamageTime;
+        private bool pausedByDeath;
+
+        public int MaxHp => maxHp;
+        public int CurrentHp => currentHp;
+        public bool IsDead => currentHp <= 0;
+
+        private void Awake()
+        {
+            currentHp = maxHp;
+        }
+
+        // ダメージ処理 | 피해 처리
+        public void TakeDamage(int damage)
+        {
+            if (IsDead || damage <= 0 ||
+                Time.time < nextDamageTime)
+            {
+                return;
+            }
+
+            currentHp = Mathf.Max(0, currentHp - damage);
+
+            nextDamageTime = Time.time + invincibleTime;
+
+            Debug.Log($"HP: {currentHp}/{maxHp}");
+
+            if (IsDead)
+            {
+                Die();
+            }
+        }
+
+        // ゲーム終了 | 게임 종료
+        private void Die()
+        {
+            Debug.Log("GAME OVER");
+
+            pausedByDeath = true;
+            Time.timeScale = 0f;
+        }
+
+        private void OnDestroy()
+        {
+            if (pausedByDeath)
+            {
+                Time.timeScale = 1f;
+            }
+        }
     }
 }

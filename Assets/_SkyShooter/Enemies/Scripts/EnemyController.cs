@@ -1,4 +1,5 @@
 using UnityEngine;
+using SkyShooter.Player;
 
 namespace SkyShooter.Enemies
 {
@@ -27,6 +28,16 @@ namespace SkyShooter.Enemies
         private bool initialized;
         private float verticalSpeed;
 
+        // 攻撃力 | 공격력
+        [SerializeField, Min(1)]
+        private int attackDamage = 10;
+
+        // 攻撃範囲 | 공격 범위
+        [SerializeField, Min(0f)]
+        private float attackDistance = 1.3f;
+
+        private PlayerStats playerStats;
+        
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
@@ -37,6 +48,7 @@ namespace SkyShooter.Enemies
             Transform target, Vector3 gateEntryPosition)
         {
             player = target;
+            playerStats = target.GetComponentInParent<PlayerStats>();
             entryPosition = gateEntryPosition;
 
             entering = true;
@@ -107,6 +119,17 @@ namespace SkyShooter.Enemies
             displacement.y = verticalSpeed * Time.deltaTime;
 
             controller.Move(displacement);
+            // 攻撃範囲の判定 | 공격 범위 판정
+            if (!entering && player != null && playerStats != null)
+            {
+                Vector3 attackOffset = player.position - transform.position;
+                attackOffset.y = 0f;
+
+                if (attackOffset.magnitude <= attackDistance)
+                {
+                    playerStats.TakeDamage(attackDamage);
+                }
+            }
         }
     }
 }

@@ -27,6 +27,13 @@ namespace SkyShooter.Player
         private CharacterController controller;
         private float verticalSpeed;
 
+        // 斜め方向の維持時間 | 대각선 방향 유지 시간
+        [SerializeField, Min(0f)]
+        private float directionHoldTime = 0.08f;
+
+        private Vector3 previousMoveDirection;
+        private float directionHoldUntil = -1f;
+
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
@@ -56,13 +63,39 @@ namespace SkyShooter.Player
             Vector3 direction = Vector3.ClampMagnitude(
                 ReadMovement(), 1f);
 
-            if (direction.sqrMagnitude > 0.001f)
+            // 斜め移動の判定 | 대각선 이동 판정
+            bool wasDiagonal =
+                Mathf.Abs(previousMoveDirection.x) > 0.001f &&
+                Mathf.Abs(previousMoveDirection.z) > 0.001f;
+
+            bool isMoving = direction.sqrMagnitude > 0.001f;
+
+            bool isDiagonal =
+                Mathf.Abs(direction.x) > 0.001f &&
+                Mathf.Abs(direction.z) > 0.001f;
+
+            // 方向キーを離す時間差を補正する。
+            // 방향키를 떼는 시간 차이를 보정한다.
+            if (direction != previousMoveDirection)
+            {
+                directionHoldUntil =
+                    wasDiagonal && isMoving && !isDiagonal &&
+                    Vector3.Dot(previousMoveDirection, direction) > 0f
+                    ? Time.time + directionHoldTime
+                    : -1f;
+            }
+
+            // 最後の向きを維持する。
+            // 마지막으로 바라본 방향을 유지한다.
+            if (isMoving && Time.time >= directionHoldUntil)
             {
                 FacingDirection = direction.normalized;
 
                 transform.rotation = Quaternion.LookRotation(
                     FacingDirection, Vector3.up);
             }
+
+            previousMoveDirection = direction;
 
             if (controller.isGrounded && verticalSpeed < 0f)
             {
