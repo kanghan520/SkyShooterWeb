@@ -2,13 +2,111 @@ using UnityEngine;
 
 namespace SkyShooter.Enemies
 {
-    /// <summary>
-    /// 敵の進入と移動を担当する。 | 적의 진입과 이동을 담당한다.
-    /// 構成段階：動作は未実装。 | 구성 단계: 동작은 아직 구현하지 않음.
-    /// </summary>
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(CharacterController), typeof(EnemyStats))]
     public sealed class EnemyController : MonoBehaviour
     {
-        // TODO: 出入口の内側へ進んだ後、プレイヤーを追跡する。 | 출입구 안쪽으로 이동한 뒤 플레이어를 추적한다.
-        // TODO: 斜め方向にも移動し、接触ダメージを通知する。 | 대각선으로도 이동하고 접촉 피해를 전달한다.
+        [SerializeField, Min(0.01f)]
+        private float moveSpeed = 2f;
+
+        [SerializeField, Min(0f)]
+        private float stoppingDistance = 1.1f;
+
+        [SerializeField, Min(0.01f)]
+        private float entryArrivalDistance = 0.25f;
+
+        [SerializeField, Min(0f)]
+        private float gravity = 20f;
+
+        private CharacterController controller;
+        private EnemyStats stats;
+        private Transform player;
+
+        private Vector3 entryPosition;
+        private bool entering;
+        private bool initialized;
+        private float verticalSpeed;
+
+        private void Awake()
+        {
+            controller = GetComponent<CharacterController>();
+            stats = GetComponent<EnemyStats>();
+        }
+
+        public void Initialize(
+            Transform target, Vector3 gateEntryPosition)
+        {
+            player = target;
+            entryPosition = gateEntryPosition;
+
+            entering = true;
+            initialized = true;
+            verticalSpeed = 0f;
+        }
+
+        private void Update()
+        {
+            if (!initialized || !controller.enabled
+                || stats.IsDead || Time.deltaTime <= 0f)
+            {
+                return;
+            }
+
+            Vector3 offset = Vector3.zero;
+            float stopAt = stoppingDistance;
+
+            if (entering)
+            {
+                // 最初は門の内側へ移動する。 | 처음에는 문 안쪽으로 이동한다.
+                offset = entryPosition - transform.position;
+                offset.y = 0f;
+
+                stopAt = entryArrivalDistance;
+
+                if (offset.magnitude <= entryArrivalDistance + 0.02f)
+                {
+                    entering = false;
+                }
+            }
+
+            if (!entering)
+            {
+                // 進入後はプレイヤーを追跡する。 | 진입 후 플레이어를 추적한다.
+                offset = player != null
+                    ? player.position - transform.position
+                    : Vector3.zero;
+
+                offset.y = 0f;
+                stopAt = stoppingDistance;
+            }
+
+            float distance = offset.magnitude;
+            Vector3 displacement = Vector3.zero;
+
+            if (distance > stopAt)
+            {
+                Vector3 direction = offset / distance;
+
+                // 目的地を通り越さない。 | 목적지를 지나치지 않게 한다.
+                float moveDistance = Mathf.Min(
+                    moveSpeed * Time.deltaTime,
+                    distance - stopAt);
+
+                displacement = direction * moveDistance;
+
+                transform.rotation = Quaternion.LookRotation(
+                    direction, Vector3.up);
+            }
+
+            if (controller.isGrounded && verticalSpeed < 0f)
+            {
+                verticalSpeed = -2f;
+            }
+
+            verticalSpeed -= gravity * Time.deltaTime;
+            displacement.y = verticalSpeed * Time.deltaTime;
+
+            controller.Move(displacement);
+        }
     }
 }
